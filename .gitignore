@@ -1,0 +1,28 @@
+# Ignora la carpeta de dependencias de Node
+node_modules/
+
+# Ignora los archivos de construcción de Electron
+dist/
+out/
+build/
+
+# Archivos de caché del entorno de desarrollo
+*.log
+.DS_Store
+Thumbs.db
+
+# Ignora configuraciones específicas de IDE o editores
+.vscode/
+.idea/
+
+# Ignora el archivo de entorno (si usas uno para variables sensibles)
+.env
+
+# Ignora caché de compilación y otros archivos específicos de Electron
+*.asar
+*.bak
+*.lock
+
+# Ignora cualquier otra carpeta o archivo temporal que sea específico de tu configuración de desarrollo
+.cache/
+.temp/
