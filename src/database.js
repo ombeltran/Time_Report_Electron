@@ -2,27 +2,30 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Ruta a la base de datos
+// Rout of data base
 const dbPath = path.join(__dirname, 'mi-base-de-datos.db');
 
-// Conectar a la base de datos
+// Connect to data base
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error al conectar a la base de datos:', err.message);
     } else {
-        console.log('Conexión exitosa a la base de datos SQLite');
+        console.log('Successfull connection to data base SQLite');
     }
 });
 
-// Crear tabla si no existe
+// Build a table if it does not exist.
 const createTable = async () => {
     return new Promise((resolve, reject) => {
         db.run(`
-            CREATE TABLE IF NOT EXISTS usuarios (
+            CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                codigo TEXT,
-                nombre TEXT,
-                apellido TEXT
+                code TEXT UNIQUE,
+                name TEXT,
+                lastName TEXT,
+                state TEXT,
+                creationDate DATE DEFAULT (datetime('now', 'localtime')),
+                updateDate DATE DEFAULT (datetime('now', 'localtime'))
             )
         `, (err) => {
             if (err) reject(err);
@@ -31,28 +34,46 @@ const createTable = async () => {
     });
 };
 
-// Insertar un usuario en la base de datos
-const addUser = async (codigo, nombre, apellido) => {
+
+// Insert a new user into database
+const addUser = async (code, name, lastName, state) => {
     return new Promise((resolve, reject) => {
-        const stmt = db.prepare('INSERT INTO usuarios (codigo, nombre, apellido) VALUES (?, ?, ?)');
-        stmt.run(codigo, nombre, apellido, function (err) {
+        const stmt = db.prepare('INSERT INTO users (code, name, lastName, state) VALUES (?, ?, ?, ?)');
+        stmt.run(code, name, lastName, state, function (err) {
             if (err) reject(err);
-            else resolve(this.lastID); // Devuelve el ID del nuevo usuario
+            else resolve(this.lastID); // Return ID of new user
         });
     });
 };
 
-// Obtener todos los usuarios
+// Get all users
 const getUsers = async () => {
     return new Promise((resolve, reject) => {
-        db.all('SELECT * FROM usuarios', (err, rows) => {
+        db.all('SELECT * FROM users', (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
     });
 };
 
-// Crear la tabla cuando se inicie la base de datos
+// Updating state of a user
+
+const updateUserState = async (id, newState) => {
+    return new Promise((resolve, reject) => {
+        db.run(`
+            UPDATE users 
+            SET 
+                state = ?, 
+                updateDate = datetime('now', 'localtime')
+            WHERE id = ?
+        `, [newState, id], function (err) {
+            if (err) reject(err);
+            else resolve(this.changes); // Number of rows updated
+        });
+    });
+};
+
+// Create the table when start the data base
 createTable();
 
 module.exports = { addUser, getUsers };

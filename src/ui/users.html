@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electron & SQlite</title>
+    <title>Electron & SQLite</title>
     <link rel="stylesheet" href="./bootstrap.min.css">
 </head>
 <body>
@@ -43,9 +43,25 @@
                     </button>
                 </form>
             </div>
-        </div>
-        <div class="row">
-            <ul id="userList"></ul>
+            
+            <!-- Contenedor para la tabla de usuarios -->
+            <div class="col-md-6 p-4">
+                <table class="table" id="userList">
+                    <thead>
+                        <tr class="text-start">
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Last Name</th>
+                            <th>State</th>
+                            <th>Creation date</th>
+                            <th>Update date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-start">
+                        <!-- Dynamic user information -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </main>
     <script src="./users.js"></script>
