@@ -69,7 +69,7 @@ const addUser = async (code, name, lastName, state) => {
 // Get all users
 const getUsers = async () => {
     return new Promise((resolve, reject) => {
-        db.all('SELECT * FROM users', (err, rows) => {
+        db.all('SELECT * FROM users ORDER BY code DESC', (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
