@@ -4,16 +4,16 @@ const path = require('path');
 // Database path
 const dbPath = path.join(__dirname, 'mi-base-de-datos.db');
 
-// Connect to database
+// Connect to the database
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error connecting to database:', err.message);
     } else {
-        console.log('Successful connection to the database SQLite');
+        console.log('Successful connection to the SQLite database');
     }
 });
 
-// Create users table if it does not exist
+// Create users table if it doesn't exist
 const createUsersTable = async () => {
     return new Promise((resolve, reject) => {
         db.run(`
@@ -33,7 +33,7 @@ const createUsersTable = async () => {
     });
 };
 
-// Create records table if it does not exist
+// Create records table if it doesn't exist
 const createRelatedTable = async () => {
     return new Promise((resolve, reject) => {
         db.run(`
@@ -61,7 +61,7 @@ const addUser = async (code, name, lastName, state) => {
         const stmt = db.prepare('INSERT INTO users (code, name, lastName, state) VALUES (?, ?, ?, ?)');
         stmt.run(code, name, lastName, state, function (err) {
             if (err) reject(err);
-            else resolve(this.lastID); // Retornar ID del nuevo usuario
+            else resolve(this.lastID); // Return the ID of the new user
         });
     });
 };
@@ -77,48 +77,43 @@ const getUsers = async () => {
 };
 
 // Update a user's status
-const updateUserState = async (id, newState) => {
+async function updateUserState(userId, newState) {
     return new Promise((resolve, reject) => {
-        db.run(`
-            UPDATE users 
-            SET 
-                state = ?, 
-                updateDate = datetime('now', 'localtime')
-            WHERE id = ?
-        `, [newState, id], function (err) {
+        const sql = 'UPDATE users SET state = ?, updateDate = CURRENT_TIMESTAMP WHERE id = ?';
+        db.run(sql, [newState, userId], (err) => {
             if (err) reject(err);
-            else resolve(this.changes); // Number rows updated
+            else resolve();
         });
     });
-};
+}
 
+// Handle user check-in/check-out
 const handleUserCheckInOut = async (code) => {
     return new Promise((resolve, reject) => {
-        // First, search if tehre is already a register with checkIn and without checkOut
         db.get(`
             SELECT id, checkOut FROM records WHERE code = ? AND checkOut IS NULL
         `, [code], (err, row) => {
             if (err) {
-                reject('Error al validar el registro:', err.message);
+                reject('Error validating record:', err.message);
             } else if (row) {
-                // If there is a register without checkOut, We update with currenly date and time
+                // If there is a register without checkOut, update it
                 db.run(`
                     UPDATE records
                     SET checkOut = datetime('now', 'localtime'), updateDate = datetime('now', 'localtime')
                     WHERE id = ?
-                `, [row.id], function (err) {
-                    if (err) reject('Error al actualizar el registro:', err.message);
-                    else resolve(`Updated register with checkOut to code ${code}`);
+                `, [row.id], (err) => {
+                    if (err) reject('Error updating the record:', err.message);
+                    else resolve(`Updated register with checkOut for code ${code}`);
                 });
             } else {
-                // If there is a register without checkOut, we create a new one with checkIn
+                // If there is no existing record without checkOut, create a new one with checkIn
                 db.get(`
                     SELECT name, lastName FROM users WHERE code = ? AND state = 'Active'
                 `, [code], (err, user) => {
                     if (err) {
                         reject('Error searching user:', err.message);
                     } else if (!user) {
-                        reject("User doesn't no found or not active");
+                        reject("User not found or not active");
                     } else {
                         const { name, lastName } = user;
 
@@ -127,8 +122,8 @@ const handleUserCheckInOut = async (code) => {
                             VALUES (?, ?, ?, datetime('now', 'localtime'))
                         `);
                         stmt.run(code, name, lastName, function (err) {
-                            if (err) reject('Error al crear el registro:', err.message);
-                            else resolve(`Craeted new register with checkIn to code ${code}`);
+                            if (err) reject('Error creating the record:', err.message);
+                            else resolve(`Created new register with checkIn for code ${code}`);
                         });
                     }
                 });
@@ -137,8 +132,7 @@ const handleUserCheckInOut = async (code) => {
     });
 };
 
-
-// Get records records
+// Get all related records
 const getRelatedRecords = async () => {
     return new Promise((resolve, reject) => {
         db.all('SELECT * FROM records', (err, rows) => {

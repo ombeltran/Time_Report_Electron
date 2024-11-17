@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron & SQLite</title>
+    <link rel="stylesheet" href="./bootstrap.min.css">
+</head>
+
+<body>
+    <main class="container-fluid d-flex flex-column align-items-center vh-100">
+        <!-- Form and table container -->
+        <div class="w-100 mt-4" style="max-width: 95%;">
+            <!-- Form -->
+            <form class="mb-4" id="updateForm">
+                <h4 class="card-title text-center mb-3">Search Users</h4>
+                <div class="form-group">
+                    <select id="updateCode" name="updateCode" class="form-control">
+                        <option value="All" selected>All users</option>
+                        <!-- <option value="" class="users-start">Dynamic information</option> -->
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3 w-100">
+                    Search
+                </button>
+            </form>
+
+            <!-- Tabla -->
+            <div class="">
+                <table class="table table-striped table-hover" id="updateList">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Last Name</th>
+                            <th>State</th>
+                            <th>Creation Date</th>
+                            <th>Update Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic user information -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <script src="./update.js"></script>
+</body>
+
+</html>

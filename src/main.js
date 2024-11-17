@@ -1,6 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain } = require("electron");
-const { addUser, getUsers, handleUserCheckInOut } = require('./database'); // Import functions of database
-let winRegister, winUsers, winHelp;
+const { addUser, getUsers, handleUserCheckInOut, updateUserState } = require('./database'); // Import functions of database
+let winRegister, winUsers, winHelp, winUpdate;
 
 function createwindow() {
     winRegister = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -8,9 +8,11 @@ function createwindow() {
 
     const template = [
         {
-            label: 'File', submenu: [{ label: 'Exit', click: function () {
-                app.quit();
-            } }]
+            label: 'File', submenu: [{
+                label: 'Exit', click: function () {
+                    app.quit();
+                }
+            }]
         },
         {
             label: 'Users', submenu: [{
@@ -26,7 +28,35 @@ function createwindow() {
                         updateMenuState('create', true);
                     });
                 }
-            }, { label: 'Reports' }]
+            },
+            {
+                label: 'Update', id: 'update', click: function () {
+                    winUpdate = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+                    winUpdate.loadFile('src/ui/update.html');
+                    updateMenuState('update', false);
+                    // winUpdate.webContents.openDevTools();
+
+                    // 'close' event for winUsers
+                    winUpdate.on('close', () => {
+                        winUpdate = null;
+                        updateMenuState('update', true);
+                    });
+                }
+            },
+            { 
+                label: 'Reports', id: 'report', click: function () {
+                    winUpdate = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+                    winUpdate.loadFile('');
+                    updateMenuState('report', false);
+                    // winUsers.webContents.openDevTools();
+
+                    // 'close' event for winUsers
+                    winUpdate.on('close', () => {
+                        winUpdate = null;
+                        updateMenuState('report', true);
+                    });
+                }
+            }]
         },
         {
             label: 'Help', id: 'help', click: function () {
@@ -101,6 +131,30 @@ ipcMain.on('show-users-window', () => {
 
 ipcMain.on('focus-users-window', () => {
     if (winUsers) winUsers.focus();
+});
+
+// *************** Process with update window ********************
+
+// Get users by code
+ipcMain.handle('get-users-by-code', async (event, code) => {
+    try {
+        const users = await getUsers();
+        return users.filter(user => user.code === code); // Filter by code
+    } catch (error) {
+        console.error('Error getting users by code:', error);
+        return [];
+    }
+});
+
+// Update user state
+ipcMain.handle('update-user-state', async (event, userId, newState) => {
+    try {
+        await updateUserState(userId, newState);
+        return { success: true };  // Return a successful result
+    } catch (error) {
+        console.error('Error updating user state:', error);
+        return { success: false, message: error.message };  // Return the error
+    }
 });
 
 // *************** Process with App Window (Record creations) ********************
