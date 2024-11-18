@@ -47,7 +47,6 @@ document.getElementById('updateForm').addEventListener('submit', async (event) =
             `;
             tbody.appendChild(tr);
         });
-        // <td><button class="btn btn-warning btn-sm" onclick="toggleUserState(${user.id}, '${user.state}')">Edit</button></td>
     } catch (error) {
         console.error('Error fetching users:', error);
     }

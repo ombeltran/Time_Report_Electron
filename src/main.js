@@ -1,6 +1,12 @@
 const { app, BrowserWindow, Menu, ipcMain } = require("electron");
-const { addUser, getUsers, handleUserCheckInOut, updateUserState } = require('./database'); // Import functions of database
-let winRegister, winUsers, winHelp, winUpdate;
+const {
+    addUser,
+    getUsers,
+    handleUserCheckInOut,
+    updateUserState,
+    getRelatedRecords
+} = require('./database'); // Import functions of database
+let winRegister, winUsers, winHelp, winUpdate, winReport;
 
 function createwindow() {
     winRegister = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -43,16 +49,16 @@ function createwindow() {
                     });
                 }
             },
-            { 
+            {
                 label: 'Reports', id: 'report', click: function () {
-                    winUpdate = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-                    winUpdate.loadFile('');
+                    winReport = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false} });
+                    winReport.loadFile('src/ui/report.html');
                     updateMenuState('report', false);
-                    // winUsers.webContents.openDevTools();
+                    winReport.webContents.openDevTools();
 
                     // 'close' event for winUsers
-                    winUpdate.on('close', () => {
-                        winUpdate = null;
+                    winReport.on('close', () => {
+                        winReport = null;
                         updateMenuState('report', true);
                     });
                 }
@@ -182,6 +188,29 @@ ipcMain.on('create-record', async (event, recordData) => {
     } catch (error) {
         console.error('Error creating record:', error.message);
         event.reply('user-record', { success: false, message: 'Error creating record. Try again.' });
+    }
+});
+
+// Get all records without a specifict critery
+ipcMain.handle('get-records', async () => {
+    try {
+        const records = await getRelatedRecords();
+        return records;
+    } catch (error) {
+        console.error('Error getting users:', error);
+        return [];
+    }
+});
+
+// Get all records with a specifict critery
+ipcMain.handle('get-records-date', async (event, iniCheckIn, finalCheckOut) => {
+    try {
+        console.log('esto llega al main: ', iniCheckIn, finalCheckOut);
+        const records = await getAllRecordOneDate(iniCheckIn, finalCheckOut);
+        return records;
+    } catch (error) {
+        console.error('Error getting records by date:', error);
+        return [];
     }
 });
 

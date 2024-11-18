@@ -11,16 +11,32 @@
 <body>
     <main class="container-fluid d-flex flex-column align-items-center vh-100">
         <!-- Form and table container -->
-        <div class="w-100 mt-4" style="max-width: 95%;">
+        <div class="row w-100 mt-4 justify-content-center" style="max-width: 95%;">
             <!-- Form -->
-            <form class="mb-4" id="updateForm">
-                <h4 class="card-title text-center mb-3">Search Users</h4>
-                <div class="form-group">
-                    <select id="updateCode" name="updateCode" class="form-control">
-                        <option value="All" selected>All users</option>
-                        <!-- <option value="" class="users-start">Dynamic information</option> -->
-                    </select>
+            <form class="mb-4 w-50" id="reportForm">
+                <h4 class="card-title text-center mb-3 fw-bold">Log search</h4>
+                <div class="form-group my-2">
+                    <input type="number" 
+                    id="userCode" 
+                    placeholder="Register a user code" 
+                    class="form-control"
+                    autofocus />
                 </div>
+
+                <div class="form-group my-2">
+                    <input type="date" 
+                    id="initialDate" 
+                    placeholder="Select the initial date" 
+                    class="form-control"/>
+                </div>
+
+                <div class="form-group my-2">
+                    <input type="date" 
+                    id="finalDate" 
+                    placeholder="Select the final date" 
+                    class="form-control"/>
+                </div>
+
                 <button type="submit" class="btn btn-primary mt-3 w-100">
                     Search
                 </button>
@@ -34,9 +50,9 @@
                             <th>Code</th>
                             <th>Name</th>
                             <th>Last Name</th>
-                            <th>State</th>
+                            <th>CheckIn</th>
+                            <th>CheckOut</th>
                             <th>Creation Date</th>
-                            <th>Update Date</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,7 +62,7 @@
             </div>
         </div>
     </main>
-    <script src="./update.js"></script>
+    <script src="./report.js"></script>
 </body>
 
 </html>

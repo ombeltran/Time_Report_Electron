@@ -42,10 +42,10 @@ const createRelatedTable = async () => {
                 code TEXT,
                 name TEXT,
                 lastName TEXT,
-                checkIn DATE DEFAULT (datetime('now', 'localtime')),
-                checkOut DATE DEFAULT NULL,
-                creationDate DATE DEFAULT (datetime('now', 'localtime')),
-                updateDate DATE DEFAULT (datetime('now', 'localtime')),
+                checkIn DATETIME DEFAULT (datetime('now', 'localtime')),
+                checkOut DATETIME DEFAULT NULL,
+                creationDate DATETIME DEFAULT (datetime('now', 'localtime')),
+                updateDate DATETIME DEFAULT (datetime('now', 'localtime')),
                 FOREIGN KEY(code) REFERENCES users(code)
             )
         `, (err) => {
@@ -54,6 +54,8 @@ const createRelatedTable = async () => {
         });
     });
 };
+
+//*************** Work with users table ************************
 
 // Insert a new user into the users table
 const addUser = async (code, name, lastName, state) => {
@@ -86,6 +88,8 @@ async function updateUserState(userId, newState) {
         });
     });
 }
+
+//*************** Work with records table ************************
 
 // Handle user check-in/check-out
 const handleUserCheckInOut = async (code) => {
@@ -142,10 +146,40 @@ const getRelatedRecords = async () => {
     });
 };
 
+// get all records with a specific date
+const getAllRecordOneDate = async (iniCheckIn, finalCheckOut) => {
+    console.log('Executing query with:', iniCheckIn, finalCheckOut);  // Verifica los parámetros
+    return new Promise((resolve, reject) => {
+        db.all(
+            'SELECT * FROM records WHERE checkIn BETWEEN datetime(?) AND datetime(?)',
+            [iniCheckIn, finalCheckOut],  // Compara solo checkIn con las fechas de inicio y fin
+            (err, rows) => {
+                if (err) {
+                    console.error('SQL Error:', err);
+                    reject(err);
+                } else {
+                    console.log('Query returned:', rows.length, 'records');  // Verifica los registros
+                    resolve(rows);
+                }
+            }
+        );
+    });
+};
+
+// get one record
+const getOneRecord = async (code, checkIn, checkOut) => {
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM records WHERE code = ? AND checkIn = ? AND checkOut = ?', (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });    
+}
+
 // Create tables at startup
 (async () => {
     await createUsersTable();
     await createRelatedTable();
 })();
 
-module.exports = { addUser, getUsers, updateUserState, handleUserCheckInOut, getRelatedRecords };
+module.exports = { addUser, getUsers, updateUserState, handleUserCheckInOut, getRelatedRecords, getOneRecord, getAllRecordOneDate };
