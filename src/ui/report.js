@@ -1,9 +1,9 @@
 const { ipcRenderer } = require('electron');
+const Papa = require('papaparse');
+const fs = require('fs');
 
 const reportForm = document.getElementById('reportForm');
 const userCode = document.getElementById('userCode');
-const initialDate = document.getElementById('initialDate');
-const finalDate = document.getElementById('finalDate');
 const userList = document.getElementById('updateList').querySelector('tbody');
 
 reportForm.addEventListener('submit', (e) => {
@@ -16,15 +16,10 @@ reportForm.addEventListener('submit', (e) => {
     }
     submitButton.disabled = true;
 
-    if (userCode.value === '' && initialDate.value === '' && finalDate.value === '') {
+    if (userCode.value === '' ) {
         getAllRecords(submitButton);
-    } else if (userCode.value === '' && initialDate.value !== '' && finalDate.value !== '') {
-        const initial = new Date(initialDate.value).toISOString().split('T')[0] + ' 01:00:00';
-        const final = new Date(finalDate.value).toISOString().split('T')[0] + ' 23:59:59';
-        console.log('Sending parameters 1:', initial, final);
-        getAllRecordsWithDate(submitButton, initial, final);
     } else {
-        console.log('Does not work');
+        getOneRecord(submitButton, userCode.value);
     }
 
 });
@@ -61,26 +56,45 @@ const getAllRecords = async (submitButton) => {
     }
 };
 
-// Get all records with date specific
-const getAllRecordsWithDate = async (submitButton, iniCheckIn, finalCheckOut) => {
+//Get one record
+const getOneRecord = async (submitButton, code) => {
     try {
-        console.log('Sending parameters 2:', iniCheckIn, finalCheckOut);
-        const records = await ipcRenderer.invoke('get-records-date', iniCheckIn, finalCheckOut)
-            .then((records) => {
-                console.log(iniCheckIn, finalCheckOut);
-                console.log('Records returned from main process:', records);
-            })
-            .catch((error) => {
-                console.error('Error invoking get-records-date:', error);
-            });
-        console.log('Records fetched:', records); // Verifica si los datos son correctos
-        userList.innerHTML = ''; // Limpia la tabla antes de agregar nuevos datos
-        tableHTML(records);
+        const records = await ipcRenderer.invoke('get-one-record', code); // Llamada al proceso principal
+        userList.innerHTML = ''; // Limpiar la tabla
+        tableHTML(records); // Mostrar los registros
     } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching records:', error);
     } finally {
-        submitButton.disabled = false; // Reactiva el botón después del proceso
+        submitButton.disabled = false; // Reactivar el botón
     }
 };
 
+// Download data
+const exportToCSV = async () => {
+    try {
+        // Obtener los datos de la tabla
+        const rows = Array.from(userList.querySelectorAll('tr'));
+        const records = rows.map(row => {
+            const cols = row.querySelectorAll('td');
+            return {
+                code: cols[0].innerText,
+                name: cols[1].innerText,
+                lastName: cols[2].innerText,
+                checkIn: cols[3].innerText,
+                checkOut: cols[4].innerText,
+                creationDate: cols[5].innerText,
+            };
+        });
 
+        // Convertir los datos a CSV usando PapaParse
+        const csv = Papa.unparse(records);
+
+        // Llamar a la función del proceso principal para guardar el archivo CSV
+        ipcRenderer.invoke('save-csv', csv); 
+    } catch (error) {
+        console.error('Error exportando los datos a CSV:', error);
+    }
+};
+
+// Botón de descarga
+document.getElementById('download').addEventListener('click', exportToCSV);

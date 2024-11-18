@@ -1,11 +1,14 @@
-const { app, BrowserWindow, Menu, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require("electron");
 const {
     addUser,
     getUsers,
     handleUserCheckInOut,
     updateUserState,
-    getRelatedRecords
+    getRelatedRecords,
+    getOneRecord
 } = require('./database'); // Import functions of database
+const fs = require('fs');
+const path = require('path');
 let winRegister, winUsers, winHelp, winUpdate, winReport;
 
 function createwindow() {
@@ -54,7 +57,7 @@ function createwindow() {
                     winReport = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false} });
                     winReport.loadFile('src/ui/report.html');
                     updateMenuState('report', false);
-                    winReport.webContents.openDevTools();
+                    // winReport.webContents.openDevTools();
 
                     // 'close' event for winUsers
                     winReport.on('close', () => {
@@ -202,15 +205,14 @@ ipcMain.handle('get-records', async () => {
     }
 });
 
-// Get all records with a specifict critery
-ipcMain.handle('get-records-date', async (event, iniCheckIn, finalCheckOut) => {
+// Get a specific user code 
+ipcMain.handle('get-one-record', async (event, code) => {
     try {
-        console.log('esto llega al main: ', iniCheckIn, finalCheckOut);
-        const records = await getAllRecordOneDate(iniCheckIn, finalCheckOut);
-        return records;
+        const records = await getOneRecord(code); // Llamar a la función getOneRecord
+        return records; // Devolver los registros encontrados
     } catch (error) {
-        console.error('Error getting records by date:', error);
-        return [];
+        console.error('Error fetching record:', error);
+        return []; // Retorna un array vacío en caso de error
     }
 });
 
@@ -226,6 +228,35 @@ ipcMain.on('show-register-window', () => {
 
 ipcMain.on('focus-register-window', () => {
     if (winRegister) winRegister.focus();
+});
+
+// ***************** Handle doenload data *****************
+
+// Manejar el evento de guardar el archivo CSV
+ipcMain.handle('save-csv', async (event, csvData) => {
+    try {
+        // Mostrar el cuadro de diálogo de guardar archivo
+        const result = await dialog.showSaveDialog({
+            filters: [
+                { name: 'CSV Files', extensions: ['csv'] }
+            ]
+        });
+
+        if (!result.canceled) {
+            // Escribir el archivo CSV
+            fs.writeFile(result.filePath, csvData, (err) => {
+                if (err) {
+                    console.error('Error al escribir el archivo:', err);
+                } else {
+                    console.log('Archivo CSV guardado en:', result.filePath);
+                }
+            });
+        } else {
+            console.log('Exportación cancelada');
+        }
+    } catch (error) {
+        console.error('Hubo un error al intentar guardar el archivo CSV:', error);
+    }
 });
 
 // *************** Export windows creation ********************
