@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 // Database path
-const dbPath = path.join(__dirname, 'mi-base-de-datos.db');
+const dbPath = path.join(__dirname, 'my-data-base.db'); //mi-base-de-datos.db
 
 // Connect to the database
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -139,7 +139,7 @@ const handleUserCheckInOut = async (code) => {
 // Get all related records
 const getRelatedRecords = async () => {
     return new Promise((resolve, reject) => {
-        db.all('SELECT * FROM records', (err, rows) => {
+        db.all('SELECT * FROM records ORDER BY checkIn DESC', (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
@@ -148,7 +148,7 @@ const getRelatedRecords = async () => {
 
 const getOneRecord = (code) => {
     return new Promise((resolve, reject) => {
-        const query = 'SELECT * FROM records WHERE code = ?';
+        const query = 'SELECT * FROM records WHERE code = ? ORDER BY checkIn DESC';
         db.all(query, [code], (err, rows) => {
             if (err) {
                 reject(err); // En caso de error en la consulta

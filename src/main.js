@@ -12,7 +12,10 @@ const path = require('path');
 let winRegister, winUsers, winHelp, winUpdate, winReport;
 
 function createwindow() {
-    winRegister = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    const iconPath = path.resolve('src', 'assets', 'icon.ico');
+
+    winRegister = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+        icon: iconPath, });
     winRegister.loadFile('src/ui/app.html');
 
     const template = [
@@ -26,7 +29,8 @@ function createwindow() {
         {
             label: 'Users', submenu: [{
                 label: 'Create', id: 'create', click: function () {
-                    winUsers = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+                    winUsers = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+                        icon: iconPath, });
                     winUsers.loadFile('src/ui/users.html');
                     updateMenuState('create', false);
                     // winUsers.webContents.openDevTools();
@@ -40,7 +44,8 @@ function createwindow() {
             },
             {
                 label: 'Update', id: 'update', click: function () {
-                    winUpdate = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+                    winUpdate = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+                        icon: iconPath, });
                     winUpdate.loadFile('src/ui/update.html');
                     updateMenuState('update', false);
                     // winUpdate.webContents.openDevTools();
@@ -54,7 +59,8 @@ function createwindow() {
             },
             {
                 label: 'Reports', id: 'report', click: function () {
-                    winReport = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false} });
+                    winReport = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false},
+                        icon: iconPath, });
                     winReport.loadFile('src/ui/report.html');
                     updateMenuState('report', false);
                     // winReport.webContents.openDevTools();
@@ -71,7 +77,8 @@ function createwindow() {
             label: 'Help', id: 'help', click: function () {
                 if (!winHelp) {
                     // Create only if not initialized
-                    winHelp = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+                    winHelp = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+                        icon: iconPath, });
                     winHelp.loadFile('src/ui/help.html');
                     updateMenuState('help', false);
 
