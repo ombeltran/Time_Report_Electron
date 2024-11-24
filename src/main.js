@@ -14,8 +14,10 @@ let winRegister, winUsers, winHelp, winUpdate, winReport;
 function createwindow() {
     const iconPath = path.resolve('src', 'assets', 'icon.ico');
 
-    winRegister = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
-        icon: iconPath, });
+    winRegister = new BrowserWindow({
+        width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+        icon: iconPath,
+    });
     winRegister.loadFile('src/ui/app.html');
 
     const template = [
@@ -29,8 +31,10 @@ function createwindow() {
         {
             label: 'Users', submenu: [{
                 label: 'Create', id: 'create', click: function () {
-                    winUsers = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
-                        icon: iconPath, });
+                    winUsers = new BrowserWindow({
+                        width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+                        icon: iconPath,
+                    });
                     winUsers.loadFile('src/ui/users.html');
                     updateMenuState('create', false);
                     // winUsers.webContents.openDevTools();
@@ -44,8 +48,10 @@ function createwindow() {
             },
             {
                 label: 'Update', id: 'update', click: function () {
-                    winUpdate = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
-                        icon: iconPath, });
+                    winUpdate = new BrowserWindow({
+                        width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+                        icon: iconPath,
+                    });
                     winUpdate.loadFile('src/ui/update.html');
                     updateMenuState('update', false);
                     // winUpdate.webContents.openDevTools();
@@ -59,8 +65,10 @@ function createwindow() {
             },
             {
                 label: 'Reports', id: 'report', click: function () {
-                    winReport = new BrowserWindow({ width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false},
-                        icon: iconPath, });
+                    winReport = new BrowserWindow({
+                        width: 1200, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
+                        icon: iconPath,
+                    });
                     winReport.loadFile('src/ui/report.html');
                     updateMenuState('report', false);
                     // winReport.webContents.openDevTools();
@@ -77,10 +85,17 @@ function createwindow() {
             label: 'Help', id: 'help', click: function () {
                 if (!winHelp) {
                     // Create only if not initialized
-                    winHelp = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true, contextIsolation: false },
-                        icon: iconPath, });
+                    winHelp = new BrowserWindow({
+                        width: 800, height: 600, webPreferences: {
+                            preload: path.resolve(__dirname, 'ui/preload.js'),
+                            contextIsolation: true,
+                            enableRemoteModule: false,
+                        },
+                        icon: iconPath,
+                    });
                     winHelp.loadFile('src/ui/help.html');
                     updateMenuState('help', false);
+                    winHelp.webContents.openDevTools();
 
                     winHelp.on('close', () => {
                         winHelp = null;
@@ -215,11 +230,11 @@ ipcMain.handle('get-records', async () => {
 // Get a specific user code 
 ipcMain.handle('get-one-record', async (event, code) => {
     try {
-        const records = await getOneRecord(code); // Llamar a la función getOneRecord
-        return records; // Devolver los registros encontrados
+        const records = await getOneRecord(code); // Call getOneRecord function
+        return records; // Return records that found
     } catch (error) {
         console.error('Error fetching record:', error);
-        return []; // Retorna un array vacío en caso de error
+        return []; // Return an empty array
     }
 });
 
@@ -239,10 +254,10 @@ ipcMain.on('focus-register-window', () => {
 
 // ***************** Handle doenload data *****************
 
-// Manejar el evento de guardar el archivo CSV
+// Hadle saving CVS file
 ipcMain.handle('save-csv', async (event, csvData) => {
     try {
-        // Mostrar el cuadro de diálogo de guardar archivo
+        // Show dialo to safe a file
         const result = await dialog.showSaveDialog({
             filters: [
                 { name: 'CSV Files', extensions: ['csv'] }
@@ -250,19 +265,55 @@ ipcMain.handle('save-csv', async (event, csvData) => {
         });
 
         if (!result.canceled) {
-            // Escribir el archivo CSV
+            // Write a CVS file
             fs.writeFile(result.filePath, csvData, (err) => {
                 if (err) {
-                    console.error('Error al escribir el archivo:', err);
+                    console.error('Error writing the file:', err);
                 } else {
-                    console.log('Archivo CSV guardado en:', result.filePath);
+                    console.log('CSV file sane in:', result.filePath);
                 }
             });
         } else {
-            console.log('Exportación cancelada');
+            console.log('Cancel export');
         }
     } catch (error) {
-        console.error('Hubo un error al intentar guardar el archivo CSV:', error);
+        console.error('Was an error to try save CSV file:', error);
+    }
+});
+
+//*******Backup process **************/
+ipcMain.handle('backup-database', async () => {
+    try {
+        const databasePath = path.resolve(__dirname, 'my-data-base.db'); // Ajusta la ruta según corresponda
+        console.log('Data base rout:', databasePath);
+
+        // Show dialog to save the file
+        const { canceled, filePath } = await dialog.showSaveDialog({
+            title: 'Save backup',
+            defaultPath: 'backup.sql',
+            filters: [
+                { name: 'SQL Files', extensions: ['sql'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        });
+
+        if (canceled) {
+            return { success: false, error: 'The user cancel the process.' };
+        }
+
+        // Check that file exist before copy it
+        if (!fs.existsSync(databasePath)) {
+            console.error('Data base file don´t file:', databasePath);
+            return { success: false, error: `File doesn´t exist: ${databasePath}` };
+        }
+
+        fs.copyFileSync(databasePath, filePath);
+        console.log('Backup done successfully:', filePath);
+        return { success: true, filePath };
+
+    } catch (error) {
+        console.error('Error while do the backup:', error);
+        return { success: false, error: error.message };
     }
 });
 
