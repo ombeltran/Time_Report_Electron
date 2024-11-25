@@ -1,12 +1,5 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require("electron");
-const {
-    addUser,
-    getUsers,
-    handleUserCheckInOut,
-    updateUserState,
-    getRelatedRecords,
-    getOneRecord
-} = require('./database'); // Import functions of database
+const db = require('./database'); // Import functions of database
 const fs = require('fs');
 const path = require('path');
 let winRegister, winUsers, winHelp, winUpdate, winReport;
@@ -37,9 +30,7 @@ function createwindow() {
                     });
                     winUsers.loadFile('src/ui/users.html');
                     updateMenuState('create', false);
-                    // winUsers.webContents.openDevTools();
 
-                    // 'close' event for winUsers
                     winUsers.on('close', () => {
                         winUsers = null;
                         updateMenuState('create', true);
@@ -54,9 +45,7 @@ function createwindow() {
                     });
                     winUpdate.loadFile('src/ui/update.html');
                     updateMenuState('update', false);
-                    // winUpdate.webContents.openDevTools();
 
-                    // 'close' event for winUsers
                     winUpdate.on('close', () => {
                         winUpdate = null;
                         updateMenuState('update', true);
@@ -71,9 +60,7 @@ function createwindow() {
                     });
                     winReport.loadFile('src/ui/report.html');
                     updateMenuState('report', false);
-                    // winReport.webContents.openDevTools();
 
-                    // 'close' event for winUsers
                     winReport.on('close', () => {
                         winReport = null;
                         updateMenuState('report', true);
@@ -84,7 +71,6 @@ function createwindow() {
         {
             label: 'Help', id: 'help', click: function () {
                 if (!winHelp) {
-                    // Create only if not initialized
                     winHelp = new BrowserWindow({
                         width: 800, height: 600, webPreferences: {
                             preload: path.resolve(__dirname, 'ui/preload.js'),
@@ -95,7 +81,7 @@ function createwindow() {
                     });
                     winHelp.loadFile('src/ui/help.html');
                     updateMenuState('help', false);
-                    winHelp.webContents.openDevTools();
+                    // winHelp.webContents.openDevTools();
 
                     winHelp.on('close', () => {
                         winHelp = null;
@@ -106,7 +92,6 @@ function createwindow() {
         }
     ];
 
-    // Function to update the menu state
     function updateMenuState(menuId, enabled) {
         const menu = Menu.getApplicationMenu();
         const menuItem = menu.getMenuItemById(menuId);
@@ -122,16 +107,14 @@ function createwindow() {
 // *************** Process with Users Window ********************
 
 // IPC handler to work with database
-ipcMain.on('create-user', async (event, userData) => {
+ipcMain.on('create-user', (event, userData) => {
     try {
         const { code, name, lastName, state } = userData;
-        const userId = await addUser(code, name, lastName, state);
+        const userId = db.addUser(code, name, lastName, state);  // Direct synchronous call
         console.log(`Created user with ID: ${userId}`);
-        event.reply('user-created', { success: true, userId }); // Send successful response
+        event.reply('user-created', { success: true, userId });
     } catch (error) {
         console.error('Error creating user:', error.message);
-
-        // Error message
         const message = error.message.includes('UNIQUE constraint failed: users.code')
             ? 'The code was already used. Please, use another.'
             : 'Error while creating user. Try again.';
@@ -139,10 +122,10 @@ ipcMain.on('create-user', async (event, userData) => {
     }
 });
 
-// IPC handler to get user list (if necessary)
-ipcMain.handle('get-users', async () => {
+// IPC handler to get user list
+ipcMain.handle('get-users', () => {
     try {
-        const users = await getUsers();
+        const users = db.getUsers();  // Direct synchronous call
         return users;
     } catch (error) {
         console.error('Error getting users:', error);
@@ -150,145 +133,82 @@ ipcMain.handle('get-users', async () => {
     }
 });
 
-// Hide and show the users window to resolve cursor loss issue
-ipcMain.on('hide-users-window', () => {
-    if (winUsers && winUsers.isVisible()) winUsers.hide();
-});
-
-ipcMain.on('show-users-window', () => {
-    if (winUsers && !winUsers.isVisible()) winUsers.show();
-    winUsers.focus();  // Ensure it is focused when shown again
-});
-
-ipcMain.on('focus-users-window', () => {
-    if (winUsers) winUsers.focus();
-});
-
-// *************** Process with update window ********************
-
-// Get users by code
-ipcMain.handle('get-users-by-code', async (event, code) => {
+//Get only one user information
+ipcMain.handle('get-users-by-code', (event, updateCode) => {
     try {
-        const users = await getUsers();
-        return users.filter(user => user.code === code); // Filter by code
+        const user = db.getOneUser(updateCode);  // Direct synchronous call
+        return user ? [user] : [];;
     } catch (error) {
-        console.error('Error getting users by code:', error);
+        console.error('Error getting users:', error);
         return [];
     }
-});
+})
 
 // Update user state
-ipcMain.handle('update-user-state', async (event, userId, newState) => {
+ipcMain.handle('update-user-state', (event, userId, newState) => {
     try {
-        await updateUserState(userId, newState);
-        return { success: true };  // Return a successful result
+        db.updateUserState(userId, newState);  // Direct synchronous call
+        return { success: true };
     } catch (error) {
         console.error('Error updating user state:', error);
-        return { success: false, message: error.message };  // Return the error
+        return { success: false, message: error.message };
     }
 });
 
 // *************** Process with App Window (Record creations) ********************
 
-// IPC handler to work with database
-ipcMain.on('create-record', async (event, recordData) => {
+// IPC handler to create a record
+ipcMain.on('create-record', (event, recordData) => {
     try {
-        const { code } = recordData;  // User code
-
-        // Check if the code exists in the database
-        const userExists = await getUsers();  // Assuming this function returns the list of users
+        const { code } = recordData;  
+        const userExists = db.getUsers();  
         const user = userExists.find(user => user.code === code);
 
         if (!user) {
-            // If user is not found, send error message
             event.reply('user-record', { success: false, message: 'User code does not exist.' });
             return;
         }
 
-        // If user exists, proceed with the process
-        const recordCode = await handleUserCheckInOut(code);
+        const recordCode = db.handleUserCheckInOut(code);
         console.log(`User created with code: ${recordCode}`);
-        event.reply('user-record', { success: true, recordCode });  // Successful response
-
+        event.reply('user-record', { success: true, recordCode });
     } catch (error) {
         console.error('Error creating record:', error.message);
         event.reply('user-record', { success: false, message: 'Error creating record. Try again.' });
     }
 });
 
-// Get all records without a specifict critery
-ipcMain.handle('get-records', async () => {
+// Get all records
+ipcMain.handle('get-records', () => {
     try {
-        const records = await getRelatedRecords();
+        const records = db.getRelatedRecords();  // Direct synchronous call
         return records;
     } catch (error) {
-        console.error('Error getting users:', error);
+        console.error('Error getting records:', error);
         return [];
     }
 });
 
-// Get a specific user code 
-ipcMain.handle('get-one-record', async (event, code) => {
+// Get a specific user record
+ipcMain.handle('get-one-record', (event, code) => {
     try {
-        const records = await getOneRecord(code); // Call getOneRecord function
-        return records; // Return records that found
+        const records = db.getOneRecord(code);  // Direct synchronous call
+        return records;
     } catch (error) {
         console.error('Error fetching record:', error);
-        return []; // Return an empty array
+        return [];
     }
 });
 
-// Hide and show the users window to resolve cursor loss issue
-ipcMain.on('hide-register-window', () => {
-    if (winRegister && winRegister.isVisible()) winRegister.hide();
-});
+// *************** Backup and Export *****************
 
-ipcMain.on('show-register-window', () => {
-    if (winRegister && !winRegister.isVisible()) winRegister.show();
-    winRegister.focus();  // Ensure it is focused when shown again
-});
-
-ipcMain.on('focus-register-window', () => {
-    if (winRegister) winRegister.focus();
-});
-
-// ***************** Handle doenload data *****************
-
-// Hadle saving CVS file
-ipcMain.handle('save-csv', async (event, csvData) => {
+// Backup process
+ipcMain.handle('backup-database', () => {
     try {
-        // Show dialo to safe a file
-        const result = await dialog.showSaveDialog({
-            filters: [
-                { name: 'CSV Files', extensions: ['csv'] }
-            ]
-        });
+        const databasePath = path.resolve(__dirname, 'my-data-base.db');
+        console.log('Database path:', databasePath);
 
-        if (!result.canceled) {
-            // Write a CVS file
-            fs.writeFile(result.filePath, csvData, (err) => {
-                if (err) {
-                    console.error('Error writing the file:', err);
-                } else {
-                    console.log('CSV file sane in:', result.filePath);
-                }
-            });
-        } else {
-            console.log('Cancel export');
-        }
-    } catch (error) {
-        console.error('Was an error to try save CSV file:', error);
-    }
-});
-
-//*******Backup process **************/
-ipcMain.handle('backup-database', async () => {
-    try {
-        const databasePath = path.resolve(__dirname, 'my-data-base.db'); // Ajusta la ruta según corresponda
-        console.log('Data base rout:', databasePath);
-
-        // Show dialog to save the file
-        const { canceled, filePath } = await dialog.showSaveDialog({
+        const filePath = dialog.showSaveDialogSync({
             title: 'Save backup',
             defaultPath: 'backup.sql',
             filters: [
@@ -297,27 +217,77 @@ ipcMain.handle('backup-database', async () => {
             ]
         });
 
-        if (canceled) {
-            return { success: false, error: 'The user cancel the process.' };
+        if (!filePath) {
+            console.error('Backup canceled or no file path provided.');
+            return { success: false, error: 'The user canceled the process or no file path provided.' };
         }
 
-        // Check that file exist before copy it
         if (!fs.existsSync(databasePath)) {
-            console.error('Data base file don´t file:', databasePath);
-            return { success: false, error: `File doesn´t exist: ${databasePath}` };
+            console.error('Database file does not exist:', databasePath);
+            return { success: false, error: `File does not exist: ${databasePath}` };
         }
 
         fs.copyFileSync(databasePath, filePath);
         console.log('Backup done successfully:', filePath);
         return { success: true, filePath };
-
     } catch (error) {
-        console.error('Error while do the backup:', error);
+        console.error('Error during backup:', error);
         return { success: false, error: error.message };
     }
 });
 
-// *************** Export windows creation ********************
+// *************** Export CSV *****************
+
+ipcMain.handle('save-csv', (event, csvData) => {
+    try {
+        const result = dialog.showSaveDialogSync({
+            filters: [
+                { name: 'CSV Files', extensions: ['csv'] }
+            ]
+        });
+
+        if (!result) {
+            console.log('User canceled export');
+            return;
+        }
+
+        fs.writeFileSync(result, csvData);
+        console.log('CSV file saved at:', result);
+    } catch (error) {
+        console.error('Error saving CSV:', error);
+    }
+});
+
+// *************** Window visibility *****************
+
+// Hide and show the users window
+ipcMain.on('hide-users-window', () => {
+    if (winUsers && winUsers.isVisible()) winUsers.hide();
+});
+
+ipcMain.on('show-users-window', () => {
+    if (winUsers && !winUsers.isVisible()) winUsers.show();
+    winUsers.focus();
+});
+
+ipcMain.on('focus-users-window', () => {
+    if (winUsers) winUsers.focus();
+});
+
+// Hide and show the app window (checkIn amd checkOut)
+ipcMain.on('hide-register-window', () => {
+    if (winRegister && winRegister.isVisible()) winRegister.hide();
+});
+
+ipcMain.on('show-register-window', () => {
+    if (winRegister && !winRegister.isVisible()) winRegister.show();
+    winRegister.focus();
+});
+
+ipcMain.on('focus-winRegister-window', () => {
+    if (winRegister) winRegister.focus();
+});
+
 module.exports = {
     createwindow,
 };

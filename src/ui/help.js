@@ -1,16 +1,21 @@
+// Add event listener to the backup button
 document.getElementById('backup').addEventListener('click', () => {
-  window.myAPI.backupDatabase()
-      .then(result => {
-          if (result.success) {
-              console.log('Backup completed:', result.filePath);
-              alert(`Backup save in: ${result.filePath}`);
-          } else {
-              console.warn('canceled proccess or error:', result.error);
-              alert(`Backup not made: ${result.error}`);
-          }
-      })
-      .catch(error => {
-          console.error('Unexpected error:', error);
-          alert('There was an unexpected error when trying to perform a backup.');
-      });
+    // Call the backupDatabase function from the preload script
+    window.myAPI.backupDatabase()
+        .then(result => {
+            if (result.success) {
+                // Log success and notify the user
+                console.log('Backup completed successfully:', result.filePath);
+                alert(`Backup saved in: ${result.filePath}`);
+            } else {
+                // Handle cases where the backup was canceled or an error occurred
+                console.warn('Canceled process or error:', result.error);
+                alert(`Backup not made: ${result.error}`);
+            }
+        })
+        .catch(error => {
+            // Handle unexpected errors
+            console.error('Unexpected error during backup:', error);
+            alert('An unexpected error occurred while trying to perform a backup.');
+        });
 });

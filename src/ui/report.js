@@ -6,28 +6,30 @@ const reportForm = document.getElementById('reportForm');
 const userCode = document.getElementById('userCode');
 const userList = document.getElementById('updateList').querySelector('tbody');
 
+// Handle form submission
 reportForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    // Deshabilita el botón mientras se procesa la solicitud
+    // Disable the submit button while the request is being processed
     const submitButton = reportForm.querySelector('button');
     if (submitButton.disabled) {
         return;
     }
     submitButton.disabled = true;
 
-    if (userCode.value === '' ) {
+    // Check if a user code is provided
+    if (userCode.value === '') {
         getAllRecords(submitButton);
     } else {
         getOneRecord(submitButton, userCode.value);
     }
-
 });
 
+// Generate table rows from the records
 const tableHTML = (records) => {
     if (!records || records.length === 0) {
         console.log('No records to display');
-        return;  // Si no hay registros, no hacer nada
+        return; // If no records, do nothing
     }
     records.forEach(record => {
         const tr = document.createElement('tr');
@@ -39,40 +41,40 @@ const tableHTML = (records) => {
             <td>${record.checkOut}</td>
             <td>${record.creationDate}</td>
         `;
-        userList.appendChild(tr); // Aquí usamos userList
+        userList.appendChild(tr); // Append rows to the table
     });
 };
 
-// Get all records without parameters
+// Fetch all records
 const getAllRecords = async (submitButton) => {
     try {
         const records = await ipcRenderer.invoke('get-records');
-        userList.innerHTML = ''; // Limpia la tabla antes de agregar nuevos datos
+        userList.innerHTML = ''; // Clear the table before adding new data
         tableHTML(records);
     } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching all records:', error);
     } finally {
-        submitButton.disabled = false; // Reactiva el botón después del proceso
+        submitButton.disabled = false; // Re-enable the button after the process
     }
 };
 
-//Get one record
+// Fetch a single record by code
 const getOneRecord = async (submitButton, code) => {
     try {
-        const records = await ipcRenderer.invoke('get-one-record', code); // Llamada al proceso principal
-        userList.innerHTML = ''; // Limpiar la tabla
-        tableHTML(records); // Mostrar los registros
+        const records = await ipcRenderer.invoke('get-one-record', code); // Call the main process
+        userList.innerHTML = ''; // Clear the table
+        tableHTML(records); // Display the fetched records
     } catch (error) {
-        console.error('Error fetching records:', error);
+        console.error('Error fetching a single record:', error);
     } finally {
-        submitButton.disabled = false; // Reactivar el botón
+        submitButton.disabled = false; // Re-enable the button
     }
 };
 
-// Download data
+// Export table data to CSV
 const exportToCSV = async () => {
     try {
-        // Obtener los datos de la tabla
+        // Get the data from the table
         const rows = Array.from(userList.querySelectorAll('tr'));
         const records = rows.map(row => {
             const cols = row.querySelectorAll('td');
@@ -86,15 +88,15 @@ const exportToCSV = async () => {
             };
         });
 
-        // Convertir los datos a CSV usando PapaParse
+        // Convert data to CSV using PapaParse
         const csv = Papa.unparse(records);
 
-        // Llamar a la función del proceso principal para guardar el archivo CSV
+        // Call the main process to save the CSV file
         ipcRenderer.invoke('save-csv', csv); 
     } catch (error) {
-        console.error('Error exportando los datos a CSV:', error);
+        console.error('Error exporting data to CSV:', error);
     }
 };
 
-// Botón de descarga
+// Add event listener to the download button
 document.getElementById('download').addEventListener('click', exportToCSV);
